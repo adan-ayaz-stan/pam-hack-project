@@ -2,10 +2,6 @@
   "name": "pam-hackathon-project",
   "version": "0.1.0",
   "private": true,
-  "author": {
-    "name": "Kiran",
-    "url": "https://github.com/Kiranism"
-  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
