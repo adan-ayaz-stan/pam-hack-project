@@ -167,15 +167,15 @@ export function BarGraph() {
     let tempFailed = failed;
 
     // Calculate whether succesful array has greater length or not
-    const greaterLength = successful.length > failed.length;
+    const greaterLength = tempSuccessful.length > tempSuccessful.length;
 
     if (greaterLength) {
-      return Array.from({ length: successful.length }, (_, i) => {
+      return Array.from({ length: tempSuccessful.length }, (_, i) => {
         // Get the i th element from successful array
         const success = tempSuccessful[i];
 
         //  Get date of the i th element
-        const date = success.createdAt;
+        const date = success?.createdAt ?? new Date();
 
         // Get all successful transcriptions on that date
         const successOnDate = tempSuccessful.filter(
@@ -210,7 +210,7 @@ export function BarGraph() {
         return { date: dateStr, desktop: successful, mobile: failed };
       });
     } else {
-      return Array.from({ length: failed.length }, (_, i) => {
+      return Array.from({ length: tempFailed.length }, (_, i) => {
         // Get the i th element from failed array
         const fail = tempFailed[i];
 

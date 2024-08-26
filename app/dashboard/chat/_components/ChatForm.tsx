@@ -2,12 +2,16 @@
 
 import { Button } from '@/components/ui/button';
 import { Message, useChat } from 'ai/react';
-import { createContext, SVGProps } from 'react';
+import { createContext, SVGProps, useEffect, useRef, useState } from 'react';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { Form } from '@/components/ui/form';
 import { cn } from '@/lib/utils';
+import WavesurferPlayer from '@wavesurfer/react';
+import WaveSurfer from 'wavesurfer.js';
+import RecordPlugin from 'wavesurfer.js/dist/plugins/record.esm.js';
+import { Mic } from 'lucide-react';
 
 const formSchema = z.object({
   input: z.string().min(2).max(500)
@@ -16,6 +20,28 @@ const formSchema = z.object({
 export const MessagesContext = createContext<Message[]>([]);
 
 export default function ChatForm({ children }: { children?: React.ReactNode }) {
+  const waveformRef = useRef<HTMLDivElement>(null);
+  const [wavesurfer, setWavesurfer] = useState<WaveSurfer | null>(null);
+  const [wavesurferOutput, setWavesurferOutput] = useState<WaveSurfer | null>(
+    null
+  );
+  const [recorder, setRecorder] = useState<RecordPlugin | null>(null);
+  const [audioUrl, setAudioUrl] = useState<string | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+
+  const onReady = (ws: WaveSurfer) => {
+    setWavesurfer(ws);
+    setIsPlaying(false);
+  };
+
+  const onReadyOutput = (ws: WaveSurfer) => {
+    setWavesurferOutput(ws);
+  };
+
+  const onPlayPause = () => {
+    wavesurfer && wavesurfer.playPause();
+  };
+
   // 1. Define your form.
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -34,7 +60,10 @@ export default function ChatForm({ children }: { children?: React.ReactNode }) {
         behavior: 'smooth'
       });
     },
-    onFinish() {
+    onFinish: async (message) => {
+      // Call whisper model here
+
+      //
       setInput('');
       window.scrollTo({
         top: document.body.scrollHeight,
@@ -42,6 +71,18 @@ export default function ChatForm({ children }: { children?: React.ReactNode }) {
       });
     }
   });
+
+  useEffect(() => {
+    if (wavesurferOutput) {
+      const record = wavesurferOutput.registerPlugin(
+        RecordPlugin.create({
+          scrollingWaveform: false
+        })
+      );
+
+      setRecorder(record);
+    }
+  }, [wavesurferOutput]);
 
   return (
     <MessagesContext.Provider value={messages}>
@@ -56,6 +97,58 @@ export default function ChatForm({ children }: { children?: React.ReactNode }) {
             }}
             className="shadow-davy fixed bottom-12 w-full max-w-xl rounded-xl bg-primary p-4 shadow-2xl max-lg:bottom-0 max-lg:left-1/2 max-lg:-translate-x-1/2"
           >
+            {/*  */}
+
+            <div className="absolute right-full w-1/2 -translate-x-4 rounded-xl bg-slate-800 p-2">
+              <WavesurferPlayer
+                height={100}
+                barWidth={4}
+                barGap={2}
+                barRadius={3}
+                waveColor="yellow"
+                cursorWidth={0}
+                onInit={(ws) => {
+                  setWavesurferOutput(ws);
+                }}
+                onPlay={() => setIsPlaying(true)}
+                onPause={() => setIsPlaying(false)}
+              />
+              <Button
+                className="absolute left-1/2 top-1/2 z-30 -translate-x-1/2 -translate-y-1/2"
+                onClick={() => {
+                  if (recorder) {
+                    recorder.startMic();
+                    recorder.startRecording();
+                  }
+                }}
+                type="button"
+              >
+                <Mic />
+              </Button>
+            </div>
+            <div className="absolute left-full w-1/2 translate-x-4 rounded-xl bg-slate-800 p-2">
+              <WavesurferPlayer
+                height={100}
+                barWidth={4}
+                barGap={2}
+                barRadius={3}
+                cursorWidth={0}
+                waveColor="violet"
+                url={
+                  audioUrl ??
+                  'https://s3u.tmimgcdn.com/u2281092/20a6e987b2d726d489b6d33219b21a3d.mp3'
+                }
+                onReady={onReady}
+                onPlay={() => setIsPlaying(true)}
+                onPause={() => setIsPlaying(false)}
+              />
+
+              <div className="absolute left-1/2 top-1/2 z-30 flex -translate-x-1/2 -translate-y-1/2 items-center gap-1 rounded bg-primary p-3 py-1">
+                <Mic /> AI
+              </div>
+            </div>
+
+            {/*  */}
             <div className="relative flex flex-row items-end gap-1 rounded-xl p-4">
               <textarea
                 name="input"
